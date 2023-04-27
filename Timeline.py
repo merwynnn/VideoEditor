@@ -1,3 +1,5 @@
+import random
+
 import pygame
 from Components import get_hovered_color
 import soundfile as sf
@@ -20,29 +22,31 @@ class Timeline:
         self.row_factor = 100
 
         self.zoom = 1
-        self.zoom_factor = 30  # time (in seconds) displayed on the timeline when zoom=1
+        self.zoom_factor = self.videoEditor.project_data.fps*30  # nb of frames displayed on the timeline when zoom=1
 
         self.top_bar_height = 30
 
         handle_height = 6
-        offset = (10, 40)
+        offset = (10, 25)
         self.handle = Handle(self.win,
-                             (self.pos[0] + offset[0], self.pos[1] + self.size[1] - handle_height - offset[1]),
-                             (self.size[0] - offset[0] * 2, handle_height), (0, self.zoom_factor),
-                             self.videoEditor.project_data.length, self.zoom, self.zoom_factor)
+                             pos=(self.pos[0] + offset[0], self.pos[1] + self.size[1] - handle_height - offset[1]),
+                             size=(self.size[0] - offset[0] * 2, handle_height), view_limits=(0, self.zoom_factor),
+                             length=self.videoEditor.project_data.length, zoom=self.zoom, zoom_factor=self.zoom_factor)
 
         self.cursor_pos = 0
-        self.cursor = Cursor(self.win, (self.pos[0], self.pos[1] + 9),
-                             (15, self.size[1] - self.handle.size[1] - 9 - 40))
+        self.cursor = Cursor(self.win, pos=(self.pos[0], self.pos[1] + 9),
+                             size=(15, self.size[1] - self.handle.size[1] - 9 - 40))
 
         self.timeline_objects = []
-        self.timeline_objects.append(
-            Audio(self, 1, 0, self.videoEditor.project_data.length, self.videoEditor.project_data.main_song))
+
+        self.main_audio = Audio(self, 1, 0, self.videoEditor.project_data.length, self.videoEditor.project_data.main_song)
+        self.timeline_objects.append(self.main_audio)
 
         self._is_cursor_moving = False
 
     def frame(self, events, mouse_pos):
-
+        if self.videoEditor.is_playing:
+            self.cursor_pos += 1
         for event in events:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if self.is_hovered(mouse_pos):
@@ -57,45 +61,51 @@ class Timeline:
                         if self.cursor.is_hovered(mouse_pos):
                             self._is_cursor_moving = True
                         else:
-                            self.cursor_pos = self.x_to_time(mouse_pos[0])
+                            self.cursor_pos = self.x_to_frame(mouse_pos[0])
+                            self.videoEditor.previewer.has_cursor_moved = True
             if event.type == pygame.MOUSEBUTTONUP:
                 self._is_cursor_moving = False
 
         if self._is_cursor_moving:
-            self.cursor_pos = self.x_to_time(mouse_pos[0])
+            self.cursor_pos = self.x_to_frame(mouse_pos[0])
+            self.videoEditor.previewer.has_cursor_moved = True
 
         self.handle.zoom = self.zoom
         self.handle.frame(events, mouse_pos)
 
         time_color = (71, 71, 71)
         if self.zoom < 0.1:
-            fps = self.videoEditor.project_data.fps
-            start = int(self.handle.view_limits[0] * fps) - 1
-            end = int(self.handle.view_limits[1] * fps) + 1
-            for i in range(start, end):
-                t = small_font.render(str(i), True, time_color)
-                pos = (self.pos[0] + self.frame_to_pos(i), self.pos[1] + 5)
-                self.win.blit(t, (pos[0] - t.get_rect().width / 2, pos[1]))
-                pygame.draw.line(self.win, time_color, (pos[0], pos[1] + t.get_rect().height + 5),
-                                 (self.pos[0] + self.frame_to_pos(i), self.pos[1] + self.size[1] - 15), 2)
-        else:
             start = int(self.handle.view_limits[0]) - 1
             end = int(self.handle.view_limits[1]) + 1
             for i in range(start, end):
                 t = small_font.render(str(i), True, time_color)
-                pos = (self.pos[0] + self.time_to_pos(i), self.pos[1] + 5)
+                pos = (self.frame_to_pos(i), self.pos[1] + 5)
                 self.win.blit(t, (pos[0] - t.get_rect().width / 2, pos[1]))
                 pygame.draw.line(self.win, time_color, (pos[0], pos[1] + t.get_rect().height + 5),
-                                 (self.pos[0] + self.time_to_pos(i), self.pos[1] + self.size[1] - 15), 2)
+                                 (self.frame_to_pos(i), self.pos[1] + self.size[1] - 15), 2)
+        else:
+            fps = self.videoEditor.project_data.fps
+            start = int(self.handle.view_limits[0]/fps) - 1
+            end = int(self.handle.view_limits[1]/fps) + 1
+            for i in range(start, end):
+                t = small_font.render(str(i), True, time_color)
+                pos = (self.time_to_pos(i), self.pos[1] + 5)
+                self.win.blit(t, (pos[0] - t.get_rect().width / 2, pos[1]))
+                pygame.draw.line(self.win, time_color, (pos[0], pos[1] + t.get_rect().height + 5),
+                                 (self.time_to_pos(i), self.pos[1] + self.size[1] - 15), 2)
 
+        i = 0
         for timeline_object in self.timeline_objects:
-            timeline_object.frame(events, mouse_pos)
+            if  self.handle.view_limits[0] <= timeline_object.start <= self.handle.view_limits[1] or self.handle.view_limits[0] <= timeline_object.end <= self.handle.view_limits[1] or (timeline_object.start <= self.handle.view_limits[0] and timeline_object.end >= self.handle.view_limits[1]):
+                i+=1
+                timeline_object.frame(events, mouse_pos)
+        print(i)
 
         if self.cursor_pos < 0:
             self.cursor_pos = 0
         if self.cursor_pos > self.videoEditor.project_data.length:
             self.cursor_pos = self.videoEditor.project_data.length
-        self.cursor.set_pos_x(self.time_to_pos(self.cursor_pos))
+        self.cursor.set_pos_x(self.frame_to_pos(self.cursor_pos))
         self.cursor.frame(events, mouse_pos)
 
     def is_hovered(self, mouse_pos):
@@ -111,22 +121,21 @@ class Timeline:
         return False
 
     def time_to_pos(self, time):
-        e = self.handle.view_limits[1] - self.handle.view_limits[0]
-        t = time - self.handle.view_limits[0]
+        e = (self.handle.view_limits[1] - self.handle.view_limits[0])/ self.videoEditor.project_data.fps
+        t = time - (self.handle.view_limits[0] / self.videoEditor.project_data.fps)
 
-        return (self.size[0] * t) / e
+        return (self.size[0] * t) / e + self.pos[0]
 
     def frame_to_pos(self, frame):
-        fps = self.videoEditor.project_data.fps
-        s = int(self.handle.view_limits[0] * fps)
-        e = int(self.handle.view_limits[1] * fps) - s
+        s = int(self.handle.view_limits[0])
+        e = int(self.handle.view_limits[1]) - s
         t = frame - s
 
-        return (self.size[0] * t) / e
+        return (self.size[0] * t) / e + self.pos[0]
 
-    def x_to_time(self, x):
+    def x_to_frame(self, x):
         e = self.handle.view_limits[1] - self.handle.view_limits[0]
-        return (x * e / self.size[0]) + self.handle.view_limits[0]
+        return int(((x-self.pos[0]) * e / self.size[0]) + self.handle.view_limits[0])
 
     def get_row_pos_size(self, row):
         y = 0
@@ -134,6 +143,8 @@ class Timeline:
             y += e * self.row_factor
         return self.pos[1] + self.top_bar_height + y, self.rows_size[row] * self.row_factor
 
+    def add_cut_template(self, f_start, f_end):
+        self.timeline_objects.append(Video(self, 0, f_start, f_end, None))
 
 class TimelineObject:
     def __init__(self, timeline, row, start, end, color):
@@ -158,19 +169,19 @@ class TimelineObject:
         e = self.timeline.handle.view_limits[1] - self.timeline.handle.view_limits[0]
         t = time - self.timeline.handle.view_limits[0]
 
-        return (self.timeline.size[0] * t) / e
+        return (self.timeline.size[0] * t) / e + self.timeline.pos[0]
 
     def frame_to_pos(self, frame):
         fps = self.timeline.videoEditor.project_data.fps
         s = int(self.timeline.handle.view_limits[0] * fps)
         e = int(self.timeline.handle.view_limits[1] * fps) - s
-        t = frame - s
+        t = frame - s + self.timeline.pos[0]
 
         return (self.timeline.size[0] * t) / e
 
-    def x_to_time(self, x):
+    def x_to_frame(self, x):
         e = self.timeline.handle.view_limits[1] - self.timeline.handle.view_limits[0]
-        return (x * e / self.timeline.size[0]) + self.timeline.handle.view_limits[0]
+        return int(((x-self.timeline.pos[0]) * e / self.timeline.size[0]) + self.timeline.handle.view_limits[0])
 
     def top_frame(self, events, mouse_pos, row_pos, row_size):
         pass
@@ -180,6 +191,7 @@ class Audio(TimelineObject):
     def __init__(self, timeline, row, start, end, audio_file):
         super().__init__(timeline, row, start, end, (41, 171, 56))
         self.audio_file = sf.SoundFile(audio_file)
+        print(self.audio_file.frames)
         self.samples = self.audio_file.read()
         if len(self.samples.shape) > 1:
             # Average the two channels to get a mono signal
@@ -187,6 +199,7 @@ class Audio(TimelineObject):
 
         self.max = self.samples.max()
 
+        self.audio_file.close()
     def top_frame(self, events, mouse_pos, row_pos, row_size):
         # optimization
         l = len(self.samples)
@@ -200,6 +213,16 @@ class Audio(TimelineObject):
                 pygame.draw.line(self.timeline.win, (255, 255, 255), start_pos, end_pos)
             if row_pos[0] + x > self.timeline.size[0] + self.timeline.pos[0]:
                 break
+
+class Video(TimelineObject):
+    def __init__(self, timeline, row, start, end, video_file):
+        super().__init__(timeline, row, start, end, (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)))
+        self.video_file = video_file
+
+    def top_frame(self, events, mouse_pos, row_pos, row_size):
+        pass
+
+
 
 
 class Handle:

@@ -1,4 +1,5 @@
 import random
+import time
 
 import pygame
 from Components import get_hovered_color
@@ -297,12 +298,13 @@ class Video(TimelineObject):
 
     def get_frame_at_pos(self, pos):
         relative_pos = pos - self.start
-        frame_with_fps = (relative_pos * self.video_file.length) // (self.end - self.start)
+        frame_with_fps = int((relative_pos * self.video_file.length) // (self.end - self.start))
 
         if not self.video_file.is_loaded:
             self.video_file.load()
 
-        return self.video_file.get_frame(frame_with_fps)
+        frame = self.video_file.get_frame(frame_with_fps)
+        return frame
 
 
 class BlankObject(TimelineObject):

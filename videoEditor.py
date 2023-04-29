@@ -1,4 +1,5 @@
 import sys
+import time
 
 import numpy as np
 import pygame
@@ -62,12 +63,17 @@ class VideoEditor:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
                         self.is_playing = not self.is_playing
-
+            t = time.time()
             self.previewer.frame(events, pos)
-
+            t1 = time.time()
             self.timeline.frame(events, pos)
-
+            t2 = time.time()
             self.file_browser.frame(events, pos)
+            t3=time.time()
+
+            print("-----------")
+            print("previewer: ", t1-t)
+
             if self.is_playing:
                 clock.tick(self.project_data.fps)
             else:

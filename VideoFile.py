@@ -1,4 +1,6 @@
 import os
+import time
+
 import cv2
 import pygame
 
@@ -17,6 +19,8 @@ class VideoFile:
         self.is_loaded = False
         self.video_object = None
 
+        self.video = []
+
         self.getFileInfo()
 
     def getFileInfo(self):
@@ -31,8 +35,20 @@ class VideoFile:
 
     def load(self):
         self.video_object = cv2.VideoCapture(self.path)
+        self.video = []
+        while self.video_object.isOpened():
+            frame_exists, frame = self.video_object.read()
+            if frame_exists:
+                self.video.append(frame)
+            else:
+                break
+        self.video_object.release()
+        self.is_loaded = True
 
     def get_frame(self, frame_index):
-        self.video_object.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
-        success, image = self.video_object.read()
-        return pygame.image.frombuffer(image.tostring(), image.shape[1::-1], "BGR").convert()
+        image = self.video[frame_index]
+        t2 = time.time()
+        image = pygame.image.frombuffer(image.tostring(), image.shape[1::-1], "BGR").convert()
+        t3 = time.time()
+        print("pygame: ", t3-t2)
+        return image

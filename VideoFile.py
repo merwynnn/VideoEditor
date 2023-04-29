@@ -39,16 +39,15 @@ class VideoFile:
         while self.video_object.isOpened():
             frame_exists, frame = self.video_object.read()
             if frame_exists:
-                self.video.append(frame)
+                self.video.append(pygame.image.frombuffer(frame.tostring(), frame.shape[1::-1], "BGR").convert())
             else:
                 break
         self.video_object.release()
         self.is_loaded = True
 
     def get_frame(self, frame_index):
-        image = self.video[frame_index]
         t2 = time.time()
-        image = pygame.image.frombuffer(image.tostring(), image.shape[1::-1], "BGR").convert()
+        image = self.video[frame_index]
         t3 = time.time()
         print("pygame: ", t3-t2)
         return image

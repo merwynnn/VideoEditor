@@ -35,10 +35,12 @@ class VideoFile:
 
     def load(self):
         self.video_object = cv2.VideoCapture(self.path)
+        resolution = (1280, 720)
         self.video = []
         while self.video_object.isOpened():
             frame_exists, frame = self.video_object.read()
             if frame_exists:
+                frame = cv2.resize(frame,resolution,fx=0,fy=0, interpolation = cv2.INTER_CUBIC)
                 self.video.append(pygame.image.frombuffer(frame.tostring(), frame.shape[1::-1], "BGR").convert())
             else:
                 break
@@ -46,8 +48,5 @@ class VideoFile:
         self.is_loaded = True
 
     def get_frame(self, frame_index):
-        t2 = time.time()
         image = self.video[frame_index]
-        t3 = time.time()
-        print("pygame: ", t3-t2)
         return image

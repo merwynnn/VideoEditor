@@ -3,7 +3,6 @@ import time
 
 import numpy as np
 import pygame
-from scipy.signal import find_peaks
 
 pygame.font.init()
 pygame.mixer.init()
@@ -15,8 +14,8 @@ from VideoFile import VideoFile
 from Timeline import Timeline
 import tkinter as tk
 from tkinter.filedialog import askopenfilenames, askopenfilename
-from mutagen.mp3 import MP3
 import soundfile as sf
+import psutil
 
 
 tk.Tk().withdraw() # part of the import if you are not using other tkinter functions
@@ -47,6 +46,9 @@ class VideoEditor:
 
         self.is_playing = False
 
+        self.available_memory = None
+        self.calculate_available_memory()
+
         self.start()
 
     def start(self):
@@ -63,23 +65,16 @@ class VideoEditor:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
                         self.is_playing = not self.is_playing
-            t = time.time()
             self.previewer.frame(events, pos)
-            t1 = time.time()
             self.timeline.frame(events, pos)
-            t2 = time.time()
             self.file_browser.frame(events, pos)
-            t3=time.time()
-
-            print("-----------")
-            print("previewer: ", t1-t)
 
             if self.is_playing:
                 clock.tick(self.project_data.fps)
             else:
                 clock.tick()
             fps = clock.get_fps()
-            print(int(fps))
+            #print(int(fps))
             pygame.display.update()
 
     def add_video(self):
@@ -105,7 +100,6 @@ class VideoEditor:
         last_cut = 0
         for cut in onset_times:
             cur_cut = cut
-            print(last_cut, cur_cut)
             self.timeline.add_cut_template(last_cut, cur_cut)
             last_cut = cur_cut
 
@@ -132,3 +126,6 @@ class VideoEditor:
             times.append(peak*d)
         audio_file.close()
         return times
+
+    def calculate_available_memory(self):
+        self.available_memory = psutil.virtual_memory().available

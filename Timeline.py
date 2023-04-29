@@ -248,7 +248,6 @@ class Audio(TimelineObject):
     def __init__(self, timeline, audio_file, row, start, end):
         super().__init__(timeline, row, start, end, (41, 171, 56))
         self.audio_file = sf.SoundFile(audio_file)
-        print(self.audio_file.frames)
         self.samples = self.audio_file.read()
         if len(self.samples.shape) > 1:
             # Average the two channels to get a mono signal

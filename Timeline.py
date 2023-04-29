@@ -46,7 +46,7 @@ class Timeline:
 
     def frame(self, events, mouse_pos):
         if self.videoEditor.is_playing:
-            self.cursor_pos += 1
+            self.cursor_pos = (pygame.mixer.music.get_pos() / 1000)*self.videoEditor.project_data.fps
         for event in events:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if self.is_hovered(mouse_pos):
@@ -99,7 +99,6 @@ class Timeline:
             if  self.handle.view_limits[0] <= timeline_object.start <= self.handle.view_limits[1] or self.handle.view_limits[0] <= timeline_object.end <= self.handle.view_limits[1] or (timeline_object.start <= self.handle.view_limits[0] and timeline_object.end >= self.handle.view_limits[1]):
                 i+=1
                 timeline_object.frame(events, mouse_pos)
-        print(i)
 
         if self.cursor_pos < 0:
             self.cursor_pos = 0
@@ -146,6 +145,21 @@ class Timeline:
     def add_cut_template(self, f_start, f_end):
         self.timeline_objects.append(Video(self, 0, f_start, f_end, None))
 
+    def get_video_at_position(self, frame):
+        videos = self.timeline_objects[1:]
+        while len(videos)>1:
+            i = len(videos)//2
+            if frame < videos[i].start:
+                videos = videos[:i]
+            elif videos[i].end < frame:
+                videos = videos[i+1:]
+            else:
+                return videos[i]
+        if len(videos) > 0:
+            if videos[0].start <= frame <= videos[0].end:
+                return videos[0]
+        return None
+
 class TimelineObject:
     def __init__(self, timeline, row, start, end, color):
         self.timeline = timeline
@@ -187,6 +201,7 @@ class TimelineObject:
         pass
 
 
+
 class Audio(TimelineObject):
     def __init__(self, timeline, row, start, end, audio_file):
         super().__init__(timeline, row, start, end, (41, 171, 56))
@@ -196,7 +211,7 @@ class Audio(TimelineObject):
         if len(self.samples.shape) > 1:
             # Average the two channels to get a mono signal
             self.samples = np.mean(self.samples, axis=1)
-
+        self.samples = np.abs(self.samples)
         self.max = self.samples.max()
 
         self.audio_file.close()

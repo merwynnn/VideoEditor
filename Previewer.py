@@ -14,6 +14,10 @@ class Previewer:
 
     def frame(self, events, mouse_pos):
         pygame.draw.rect(self.win, (0, 0, 0), pygame.Rect(self.pos, self.size))
+        videoObject = self.videoEditor.timeline.get_video_at_position(self.videoEditor.timeline.cursor_pos)
+        if videoObject:
+            color = videoObject.color
+            pygame.draw.rect(self.win, color, pygame.Rect(self.pos, self.size))
 
         if self.videoEditor.is_playing:
             if not self._was_playing or self.has_cursor_moved:

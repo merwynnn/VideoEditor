@@ -2,6 +2,7 @@ import sys
 
 import numpy as np
 import pygame
+from scipy.signal import find_peaks
 
 pygame.font.init()
 pygame.mixer.init()
@@ -75,7 +76,7 @@ class VideoEditor:
             else:
                 clock.tick()
             fps = clock.get_fps()
-            print(int(fps))
+            #print(int(fps))
             pygame.display.update()
 
     def add_video(self):
@@ -89,18 +90,19 @@ class VideoEditor:
 
     def get_main_song(self):
         self.is_playing = False
-        file = askopenfilename(title='Choose a song', filetypes=[("Song files", ".mp3")])
+        file = askopenfilename(title='Choose a song', filetypes=[("Song files", ".mp3 .wav")])
         self.project_data.main_song = file
-        audio = MP3(self.project_data.main_song)
+        audio_file = sf.SoundFile(self.project_data.main_song)
 
-        self.project_data.length = int(audio.info.length * self.project_data.fps)
+        self.project_data.length = int((audio_file.frames / audio_file.samplerate) * self.project_data.fps)
 
     def create_cuts_template(self, audio_file):
-        onset_times = self.get_onset_times(audio_file)
+        onset_times = self.get_onset_times2(audio_file)
 
         last_cut = 0
         for cut in onset_times:
-            cur_cut = int(cut*self.project_data.fps)
+            cur_cut = cut
+            print(last_cut, cur_cut)
             self.timeline.add_cut_template(last_cut, cur_cut)
             last_cut = cur_cut
 
@@ -111,14 +113,19 @@ class VideoEditor:
             # Average the two channels to get a mono signal
             samples = np.mean(samples, axis=1)
 
-        parts = []
-        for i in range(len(samples)//audio_file.samplerate):
-            if (i+1)*audio_file.samplerate > len(samples):
-                parts.append(samples[i * audio_file.samplerate:])
+        d = 0.5
+        parts_mean = []
+        for i in range(int(len(samples) // (audio_file.samplerate * d))):
+            if (i + 1) * (audio_file.samplerate * d) > len(samples):
+                parts_mean.append(np.mean(np.array(samples[int(i * audio_file.samplerate * d):])))
                 break
             else:
-                parts.append(samples[i*audio_file.samplerate:(i+1)*audio_file.samplerate])
+                parts_mean.append(
+                    np.mean(np.array(samples[int(i * audio_file.samplerate * d):int((i + 1) * audio_file.samplerate * d)])))
 
-        for part in parts:
-            m = np.mean(part)
-            print(m)
+        peaks2, _ = find_peaks(parts_mean, width=1, distance=3)
+        times = []
+        for peak in peaks2:
+            times.append(peak*d)
+        audio_file.close()
+        return times

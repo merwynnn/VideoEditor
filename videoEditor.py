@@ -46,16 +46,13 @@ class VideoEditor:
 
         self.is_playing = False
 
-        self.create_cuts_template(self.project_data.main_song)
-
         self.start()
 
     def start(self):
         clock = pygame.time.Clock()
+        self.window.fill(self.BACKGROUND_COLOR)
 
         while True:
-            self.window.fill(self.BACKGROUND_COLOR)
-
             events = pygame.event.get()
             pos = pygame.mouse.get_pos()
 
@@ -76,7 +73,7 @@ class VideoEditor:
             else:
                 clock.tick()
             fps = clock.get_fps()
-            #print(int(fps))
+            print(int(fps))
             pygame.display.update()
 
     def add_video(self):
@@ -97,7 +94,7 @@ class VideoEditor:
         self.project_data.length = int((audio_file.frames / audio_file.samplerate) * self.project_data.fps)
 
     def create_cuts_template(self, audio_file):
-        onset_times = self.get_onset_times2(audio_file)
+        onset_times = self.get_onset_times1(audio_file)
 
         last_cut = 0
         for cut in onset_times:

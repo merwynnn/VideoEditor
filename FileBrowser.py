@@ -68,9 +68,11 @@ class FileBrowser:
                                 self._current_video_viewer = viewer
 
             if event.type == pygame.MOUSEBUTTONUP:
-                if self._start_pos:
-                    # end
-                    pass
+                if self._current_video_viewer:
+                    if self.videoEditor.timeline.is_hovered(mouse_pos):
+                        self.videoEditor.timeline.add_video(self.videoEditor.timeline.get_ghost_object().start, self._current_video_viewer.video)
+                    self.videoEditor.timeline.hide_ghost_object()
+
                 self._start_pos = None
                 self._current_video_viewer = None
 
@@ -90,8 +92,13 @@ class FileBrowser:
             pos = (mouse_pos[0] - (self._start_pos[0] - self._current_video_viewer.pos[0]),
                    mouse_pos[1] - (self._start_pos[1] - self._current_video_viewer.pos[1]))
 
+            if self.videoEditor.timeline.is_hovered(mouse_pos):
+                self.videoEditor.timeline.show_ghost_object(mouse_pos, self._current_video_viewer.video.length, (255, 255, 255), fps=self._current_video_viewer.video.fps)
+            else:
+                self.videoEditor.timeline.hide_ghost_object()
             self.main_display.blit(pygame.transform.scale(self._current_video_viewer.video.mid_frame,
                                                           (self._current_video_viewer.size[0], int(1080 * (self._current_video_viewer.size[0]) / 1920)*1.3)), pos)
+
 
     def is_hovered(self, mouse_pos):
         if self.pos[0] <= mouse_pos[0] <= self.pos[0] + self.size[0] and self.pos[1] <= mouse_pos[1] <= self.pos[1] + \

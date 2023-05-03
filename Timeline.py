@@ -127,6 +127,9 @@ class Timeline:
             if event.type == pygame.MOUSEBUTTONUP:
                 self._is_cursor_moving = False
                 self._is_moving_objects = False
+                for t_object in self.selected_timeline_objects:
+                    self.remove_object_from_timeline(t_object)
+                    self.add_object_to_timeline(t_object)
 
         if self._is_cursor_moving:
             self.cursor_pos = self.x_to_frame(mouse_pos[0])
@@ -383,7 +386,8 @@ class Audio(TimelineObject):
 class Video(TimelineObject):
     def __init__(self, timeline, video_file, row, start, end=None, video_start=0, video_end=None):
         # Scales the video length to be the right one even if the fps of the video is not the same as the project's fps
-        end = start + self.get_length_with_fps(video_file.length-video_start, video_file.fps, timeline.videoEditor.project_data.fps)
+        if end is None:
+            end = start + self.get_length_with_fps(video_file.length-video_start, video_file.fps, timeline.videoEditor.project_data.fps)
 
         super().__init__(timeline, row, start, end,
                          (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)))

@@ -86,6 +86,7 @@ class Timeline:
                         self.add_object_to_timeline(t1)
                         self.add_object_to_timeline(t2)
                         self.selected_timeline_objects.remove(timeline_object)
+                        self.selected_timeline_objects.append(t2)
                 if event.key == pygame.K_DELETE:
                     for selected_obj in self.selected_timeline_objects:
                         self.remove_object_from_timeline(selected_obj)
@@ -126,10 +127,12 @@ class Timeline:
 
             if event.type == pygame.MOUSEBUTTONUP:
                 self._is_cursor_moving = False
-                self._is_moving_objects = False
-                for t_object in self.selected_timeline_objects:
-                    self.remove_object_from_timeline(t_object)
-                    self.add_object_to_timeline(t_object)
+                if self._is_moving_objects:
+                    self._is_moving_objects = False
+                    for t_object in self.selected_timeline_objects:
+                        if type(t_object) != Audio:
+                            self.remove_object_from_timeline(t_object)
+                            self.add_object_to_timeline(t_object)
 
         if self._is_cursor_moving:
             self.cursor_pos = self.x_to_frame(mouse_pos[0])
@@ -220,7 +223,7 @@ class Timeline:
         return self.pos[1] + self.top_bar_height + y, self.rows_size[row] * self.row_factor
 
     def add_cut_template(self, f_start, f_end):
-        t = BlankObject(self, 0, f_start, f_end)
+        t = CutTemplate(self, 0, f_start, f_end)
         self.add_object_to_timeline(t)
 
     def add_video(self, f_start, video_file, row=0):
@@ -460,10 +463,17 @@ class Video(TimelineObject):
 
         return t1, t2
 
-class BlankObject(TimelineObject):
+class CutTemplate(TimelineObject):
     def __init__(self, timeline, row, start, end):
         super().__init__(timeline, row, start, end,
                          (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)))
+
+    def cut(self, pos):
+        t1 = CutTemplate(self.timeline, self.row, start=self.start, end=pos)
+        t1.color = self.color
+        t2 = CutTemplate(self.timeline, self.row, start=pos, end=self.end)
+
+        return t1, t2
 
 
 class GhostObject(TimelineObject):

@@ -1,9 +1,9 @@
 import math
 
 import pygame
-
 from Components import Button
 from Components import get_hovered_color
+from Timeline import CutTemplate
 
 title_font = pygame.font.SysFont('arial', 25)
 small_font = pygame.font.SysFont('arial', 15)
@@ -43,6 +43,7 @@ class FileBrowser:
 
     def update(self):
         self.video_viewers = []
+        self.video_viewers.append(VideoViewer(self.display, self.pos, self.pos, self.video_viewer_size, is_cut_template=True))
         for video in self.videoEditor.project_data.videos:
             self.video_viewers.append(
                 VideoViewer(self.display, self.pos, self.pos, self.video_viewer_size, video))
@@ -70,7 +71,15 @@ class FileBrowser:
             if event.type == pygame.MOUSEBUTTONUP:
                 if self._current_video_viewer:
                     if self.videoEditor.timeline.is_hovered(mouse_pos):
-                        self.videoEditor.timeline.add_video(self.videoEditor.timeline.get_ghost_object().start, self._current_video_viewer.video)
+                        if self._current_video_viewer.is_cut_template:
+                            self.videoEditor.timeline.add_cut_template(0, self.videoEditor.project_data.length)
+                        else:
+                            t_object = self.videoEditor.timeline.get_video_at_position(self.videoEditor.timeline.x_to_frame(mouse_pos[0]))
+                            if type(t_object) is CutTemplate:
+                                self.videoEditor.show_video_cutter(self._current_video_viewer.video, t_object)
+                            else:
+                                self.videoEditor.timeline.add_video(self.videoEditor.timeline.get_ghost_object().start, self._current_video_viewer.video)
+
                     self.videoEditor.timeline.hide_ghost_object()
 
                 self._start_pos = None
@@ -93,10 +102,20 @@ class FileBrowser:
                    mouse_pos[1] - (self._start_pos[1] - self._current_video_viewer.pos[1]))
 
             if self.videoEditor.timeline.is_hovered(mouse_pos):
-                self.videoEditor.timeline.show_ghost_object(mouse_pos, self._current_video_viewer.video.length, (255, 255, 255), fps=self._current_video_viewer.video.fps)
+                if self._current_video_viewer.is_cut_template:
+                    self.videoEditor.timeline.show_ghost_object(mouse_pos, self.videoEditor.project_data.length, (255, 255, 255))
+                else:
+                    self.videoEditor.timeline.show_ghost_object(mouse_pos, self._current_video_viewer.video.length,
+                                                                (255, 255, 255),
+                                                                fps=self._current_video_viewer.video.fps)
             else:
                 self.videoEditor.timeline.hide_ghost_object()
-            self.main_display.blit(pygame.transform.scale(self._current_video_viewer.video.mid_frame,
+
+            if self._current_video_viewer.is_cut_template:
+                pygame.draw.rect(self.main_display, (255, 255, 255),pygame.Rect(pos, (self._current_video_viewer.size[0], int(1080 * (
+                                                              self._current_video_viewer.size[0]) / 1920) * 1.3)))
+            else:
+                self.main_display.blit(pygame.transform.scale(self._current_video_viewer.video.mid_frame,
                                                           (self._current_video_viewer.size[0], int(1080 * (self._current_video_viewer.size[0]) / 1920)*1.3)), pos)
 
 
@@ -111,7 +130,7 @@ class VideoViewer:
     HOVERED_COLOR = (31, 31, 31)
     BACKGROUND_COLOR = (18, 18, 18)
 
-    def __init__(self, display, pos, parent_pos, size, video):
+    def __init__(self, display, pos, parent_pos, size, video=None, is_cut_template=False):
         self.display = display
         self.parent_pos = parent_pos
         self.pos = pos
@@ -121,15 +140,17 @@ class VideoViewer:
 
         self.hovered = False
 
+        self.is_cut_template = is_cut_template
+
     def frame(self, events, mouse_pos):
         self.hovered = self.is_hovered(mouse_pos)
         if self.hovered:
-            rect = pygame.Rect(self.pos[0], self.pos[1], self.size[0], self.size[1])
+            rect = pygame.Rect(self.pos, self.size)
             pygame.draw.rect(self.display, get_hovered_color(self.BACKGROUND_COLOR), rect, 0, 10)
-        rect = pygame.Rect(self.pos[0], self.pos[1], self.size[0], self.size[1])
+        rect = pygame.Rect(self.pos, self.size)
         pygame.draw.rect(self.display, self.BACKGROUND_COLOR, rect, 3, 10)
 
-        title = self.video.title
+        title = self.video.title if not self.is_cut_template else "Cut Template"
         if len(title) > 14:
             title = title[:14] + "..."
         name = small_font.render(title, True, (255, 255, 255))
@@ -138,7 +159,11 @@ class VideoViewer:
             self.pos[0] + self.size[0] / 2 - name.get_rect().width / 2,
             self.pos[1] + self.size[1] - name.get_rect().height))
 
-        self.display.blit(pygame.transform.scale(self.video.mid_frame, (self.size[0], int(1080*(self.size[0])/1920)*1.3)), self.pos)
+        if self.is_cut_template:
+            rect = pygame.Rect(self.pos,  (self.size[0], int(1080*(self.size[0])/1920)*1.3))
+            pygame.draw.rect(self.display, (255, 255, 255), rect, 0, 10)
+        else:
+            self.display.blit(pygame.transform.scale(self.video.mid_frame, (self.size[0], int(1080*(self.size[0])/1920)*1.3)), self.pos)
 
         if self.hovered:
             for event in events:

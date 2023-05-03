@@ -134,3 +134,6 @@ class VideoEditor:
 
     def calculate_available_memory(self):
         self.available_memory = psutil.virtual_memory().available
+
+    def show_video_cutter(self, video_file, cut_template):
+        print("show_file")

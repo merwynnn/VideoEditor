@@ -2,7 +2,7 @@ import time
 
 import pygame
 import sounddevice as sd
-from Timeline import Video, BlankObject
+from Timeline import Video, CutTemplate
 class Previewer:
     def __init__(self, win, pos, size, videoEditor):
         self.win = win
@@ -26,7 +26,7 @@ class Previewer:
         pygame.draw.rect(self.win, (0, 0, 0), pygame.Rect(self.pos, self.size))
 
         timeline_object = self.videoEditor.timeline.get_video_at_position(self.videoEditor.timeline.cursor_pos)
-        if type(timeline_object) == BlankObject:
+        if type(timeline_object) == CutTemplate:
             color = timeline_object.color
             pygame.draw.rect(self.win, color, pygame.Rect(self.pos, self.size))
         elif type(timeline_object) == Video:

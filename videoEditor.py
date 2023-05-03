@@ -47,7 +47,12 @@ class VideoEditor:
         self.is_playing = False
 
         self.available_memory = None
+        self.memory_threshold = 100*1024*1024
         self.calculate_available_memory()
+
+        self.max_load_time = 40
+
+        self.pre_load = False
 
         self.start()
 
@@ -65,8 +70,8 @@ class VideoEditor:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
                         self.is_playing = not self.is_playing
-            self.previewer.frame(events, pos)
             self.timeline.frame(events, pos)
+            self.previewer.frame(events, pos)
             self.file_browser.frame(events, pos)
 
             if self.is_playing:
@@ -81,7 +86,7 @@ class VideoEditor:
         self.is_playing = False
         files = askopenfilenames(title='Choose a media', filetypes=[("Media files", ".mp4")])
         for video in files:
-            new_video = VideoFile(video)
+            new_video = VideoFile(video, self)
             self.project_data.videos.append(new_video)
 
         self.file_browser.update()

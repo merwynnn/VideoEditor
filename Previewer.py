@@ -31,7 +31,8 @@ class Previewer:
             pygame.draw.rect(self.win, color, pygame.Rect(self.pos, self.size))
         elif type(timeline_object) == Video:
             frame = timeline_object.get_frame_at_pos(self.videoEditor.timeline.cursor_pos)
-            self.win.blit(pygame.transform.scale(frame, self.size),  self.pos)
+            if frame:
+                self.win.blit(pygame.transform.scale(frame, self.size),  self.pos)
 
         if self.videoEditor.is_playing:
             if not self._was_playing or self.has_cursor_moved:

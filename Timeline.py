@@ -150,6 +150,7 @@ class Timeline:
         self.handle.zoom = self.zoom
         self.handle.frame(events, mouse_pos)
 
+        # Drawing background Lines
         time_color = (71, 71, 71)
         if self.zoom < 0.1:
             start = int(self.handle.view_limits[0]) - 1
@@ -315,8 +316,8 @@ class TimelineObject:
         self.stored_start = None    # used when moving object
 
     def frame(self, events, mouse_pos, selected = False):
-        s = self.frame_to_pos(self.start)
-        e = self.frame_to_pos(self.end)
+        s = self.timeline.frame_to_pos(self.start)
+        e = self.timeline.frame_to_pos(self.end)
         row_y, row_height = self.timeline.get_row_pos_size(self.row)
         pos = (s, row_y)
         size = (e - s, row_height)
@@ -332,23 +333,6 @@ class TimelineObject:
         self.hovered = True if pos[0] <= mouse_pos[0] <= pos[0] + size[0] and pos[1] <= mouse_pos[1] <= pos[1] + size[1] else False
 
         self.top_frame(events, mouse_pos, pos, size)
-
-    def time_to_pos(self, time):
-        e = (self.timeline.handle.view_limits[1] - self.timeline.handle.view_limits[0]) / self.timeline.VideoEditor.project_data.fps
-        t = time - (self.timeline.handle.view_limits[0] / self.timeline.videoEditor.project_data.fps)
-
-        return (self.timeline.size[0] * t) / e + self.timeline.pos[0]
-
-    def frame_to_pos(self, frame):
-        s = int(self.timeline.handle.view_limits[0])
-        e = int(self.timeline.handle.view_limits[1]) - s
-        t = frame - s
-
-        return (self.timeline.size[0] * t) / e + self.timeline.pos[0]
-
-    def x_to_frame(self, x):
-        e = self.timeline.handle.view_limits[1] - self.timeline.handle.view_limits[0]
-        return int(((x - self.timeline.pos[0]) * e / self.timeline.size[0]) + self.timeline.handle.view_limits[0])
 
     def top_frame(self, events, mouse_pos, row_pos, row_size):
         pass
@@ -400,7 +384,6 @@ class Video(TimelineObject):
         self.video_start = None
         self.video_end = None
         self.calculate_video_start_end(video_start, video_end)
-        print(self.video_start, self.video_end)
 
     def top_frame(self, events, mouse_pos, row_pos, row_size):
         if self.video_file and self.timeline.preview:
@@ -424,8 +407,8 @@ class Video(TimelineObject):
                 n = len(self.video_file.video[frame_index])
                 f1 = self.get_absolute_frame_index(frame_index)
                 f2 = self.get_absolute_frame_index(frame_index+n)
-                pos1 = (self.frame_to_pos(f1), row_pos[1])
-                pos2 = (self.frame_to_pos(f2), row_pos[1])
+                pos1 = (self.timeline.frame_to_pos(f1), row_pos[1])
+                pos2 = (self.timeline.frame_to_pos(f2), row_pos[1])
                 pygame.draw.line(self.timeline.win, (255, 0, 0), pos1, pos2)
 
     def get_relative_frame_index(self, abs_frame):
@@ -511,7 +494,7 @@ class Handle:
                 if event.button == 1:
                     if self.hovered:
                         self._start_mouse_pos = pos
-                        self._start_handle_pos = self.pos
+                        self._start_handle_pos = self.handle_start_end
                         self._start_view_limits = self.view_limits
             if event.type == pygame.MOUSEBUTTONUP:
                 self._start_mouse_pos = None
@@ -523,8 +506,11 @@ class Handle:
         self.view_limits = (mid - (l / 2), mid + (l / 2))
 
         if self._start_mouse_pos:  # on drag
-            delta = pos[0] - (self._start_mouse_pos[0] - self._start_handle_pos[0])
-            delta = (delta * self.length / self.size[0])
+            p1 = ((pos[0]-self.pos[0]) * self.win.get_width() / self.size[0])
+            p2 = ((self._start_mouse_pos[0]-self.pos[0]) * self.win.get_width() / self.size[0])
+            delta = p1-p2
+            delta = (delta * self.length / self.win.get_width())
+            #delta = self.x_to_frame(pos[0]) - self.x_to_frame(self._start_mouse_pos[0])
             self.view_limits = (self._start_view_limits[0] + delta, self._start_view_limits[1] + delta)
 
         if self.view_limits[0] < 0:
@@ -549,6 +535,10 @@ class Handle:
                 self.size[1]:
             return True
         return False
+
+    def x_to_frame(self, x):
+        e = self.view_limits[1] - self.view_limits[0]
+        return int(((x - self.pos[0]) * e / self.size[0]) + self.view_limits[0])
 
 
 class Cursor:

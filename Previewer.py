@@ -17,7 +17,7 @@ class Previewer:
         self._needs_update = True   # if something changed
 
     def frame(self, events, mouse_pos):
-        if not self._needs_update and not self.videoEditor.is_playing and not self.has_cursor_moved:
+        if not self._needs_update and not self.videoEditor.is_playing and not self.has_cursor_moved and not self.videoEditor.reload_all:
             self._was_playing = False
             pygame.mixer.music.stop()
             return

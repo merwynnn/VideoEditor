@@ -4,6 +4,7 @@ import time
 import numpy as np
 import pygame
 
+
 pygame.font.init()
 pygame.mixer.init()
 
@@ -12,6 +13,8 @@ from FileBrowser import FileBrowser
 from ProjectData import ProjectData
 from VideoFile import VideoFile
 from Timeline import Timeline
+from VideoCutter import VideoCutter
+
 import tkinter as tk
 from tkinter.filedialog import askopenfilenames, askopenfilename
 import soundfile as sf
@@ -44,6 +47,8 @@ class VideoEditor:
 
         self.file_browser = FileBrowser(self.window, (0, 0), (self.size[0]*0.25, self.previewer.size[1]), self)
 
+        self.opened_window = None   # Window opened in front of main window
+
         self.is_playing = False
 
         self.available_memory = None
@@ -53,6 +58,8 @@ class VideoEditor:
         self.max_load_time = 40
 
         self.pre_load = False
+
+        self.reload_all = False
 
         self.start()
 
@@ -70,9 +77,14 @@ class VideoEditor:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
                         self.is_playing = not self.is_playing
-            self.timeline.frame(events, pos)
-            self.previewer.frame(events, pos)
-            self.file_browser.frame(events, pos)
+            if self.opened_window:
+                self.opened_window.frame(events, pos)
+            else:
+                self.timeline.frame(events, pos)
+                self.previewer.frame(events, pos)
+                self.file_browser.frame(events, pos)
+
+                self.reload_all = False
 
             if self.is_playing:
                 clock.tick(self.project_data.fps)
@@ -137,3 +149,10 @@ class VideoEditor:
 
     def show_video_cutter(self, video_file, cut_template):
         print("show_file")
+        self.opened_window = VideoCutter(self.window, (self.width//4, self.height//4), (self.width//2, self.height//2), self, video_file, cut_template)
+
+    def on_video_cutter_done(self):
+        self.timeline.remove_object_from_timeline(self.opened_window.cut_template)
+        self.timeline.add_object_to_timeline(self.opened_window.get_cutted_video())
+        self.opened_window = None
+        self.reload_all = True

@@ -28,6 +28,7 @@ class VideoFile:
         self.is_loading = False
 
         self.preview_resolution = (1280, 720)
+        self.high_resolution = self.videoEditor.video_size
         self.frame_size_bytes = None
 
         self.videoObjects = []
@@ -161,3 +162,10 @@ class VideoFile:
                 f = pygame.image.frombuffer(f.tostring(), f.shape[1::-1], "BGR").convert()
                 return f
         return None
+
+    def get_high_res_frame(self, frame_index):
+        self.video_object.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
+        frame_exists, f = self.video_object.read()
+        if frame_exists:
+            f = cv2.resize(f, self.high_resolution, fx=0, fy=0, interpolation=cv2.INTER_CUBIC)
+            return f

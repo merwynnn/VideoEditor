@@ -1,3 +1,3 @@
 from videoEditor import VideoEditor
 
-videoEditor = VideoEditor()
+videoEditor = VideoEditor("Test")

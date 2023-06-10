@@ -153,6 +153,8 @@ class VideoEditor:
 
     def on_video_cutter_done(self):
         self.timeline.remove_object_from_timeline(self.opened_window.cut_template)
-        self.timeline.add_object_to_timeline(self.opened_window.get_cutted_video())
+        cutted_video = self.opened_window.get_cutted_video()
+        self.timeline.add_object_to_timeline(cutted_video)
+        cutted_video.video_file.videoObjects.append(cutted_video)
         self.opened_window = None
         self.reload_all = True

@@ -30,6 +30,8 @@ class VideoFile:
         self.preview_resolution = (1280, 720)
         self.frame_size_bytes = None
 
+        self.videoObjects = []
+
         self.getFileInfo()
 
     def getFileInfo(self):

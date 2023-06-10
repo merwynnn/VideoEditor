@@ -113,10 +113,18 @@ class VideoCutter:
                                            (size % w, self.main_row_size[1])),
                     (s+nb * w, 0))
 
+        # Draw clip outline
         s = self.frame_to_pos(self.cut_frame_start)-self.main_row_pos[0]
         e = self.frame_to_pos(self.cut_frame_start + self.cut_template_length)-self.main_row_pos[0]
         rect = pygame.Rect((s, 0), (e - s, self.main_row_size[1]))
         pygame.draw.rect(self.timeline_surface, (245, 217, 37), rect, width=3)
+
+        # draw used part of video
+        for videoObject in self.video_file.videoObjects:
+            s = self.frame_to_pos(videoObject.video_start) - self.main_row_pos[0]
+            e = self.frame_to_pos(videoObject.video_end) - self.main_row_pos[0]
+            rect = pygame.Rect((s, 0), (e - s, self.main_row_size[1]))
+            pygame.draw.rect(self.timeline_surface, (0, 255, 0), rect, width=2)
 
         self.win.blit(self.timeline_surface, self.main_row_pos)
 

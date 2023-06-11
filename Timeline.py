@@ -84,13 +84,12 @@ class Timeline:
         is_top_hovered = self.is_top_hovered(mouse_pos)
 
         if not self._is_moving_cuts:
-            cut_hovered_delta = 1
+            cut_hovered_delta = 10
             self.hovered_cut_right, self.hovered_cut_left = None, None
             if not is_top_hovered:
                 if not self.handle.hovered:
                     if hovered_timeline_object:
-                        mouse_frame = self.x_to_frame(mouse_pos[0])
-                        if hovered_timeline_object.start - cut_hovered_delta <= mouse_frame <= hovered_timeline_object.start + cut_hovered_delta:
+                        if self.frame_to_pos(hovered_timeline_object.start) - cut_hovered_delta <= mouse_pos[0] <= self.frame_to_pos(hovered_timeline_object.start) + cut_hovered_delta:
                             self.hovered_cut_right = hovered_timeline_object
                             # Get timeline object next to it
                             if hovered_timeline_object in self.videoEditor.project_data.rows[
@@ -104,7 +103,7 @@ class Timeline:
                                     if self.hovered_cut_right.start - 1 <= left_timeline_object.end <= self.hovered_cut_right.start:
                                         self.hovered_cut_left = left_timeline_object
 
-                        elif hovered_timeline_object.end - cut_hovered_delta <= mouse_frame <= hovered_timeline_object.end + cut_hovered_delta:
+                        elif self.frame_to_pos(hovered_timeline_object.end) - cut_hovered_delta <= mouse_pos[0] <=self.frame_to_pos(hovered_timeline_object.end) + cut_hovered_delta:
                             self.hovered_cut_left = hovered_timeline_object
                             # Get timeline object next to it
                             if hovered_timeline_object in self.videoEditor.project_data.rows[

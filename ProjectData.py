@@ -43,4 +43,3 @@ class ProjectData:
                 if video_object.video_path == video:
                     video_object.video_file = video_file
                     video_file.videoObjects.append(video_object)
-                    break

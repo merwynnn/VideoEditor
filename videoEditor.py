@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import _pickle as cPickle
+from itertools import chain
 from multiprocessing import Pool
 
 import cv2
@@ -25,9 +26,9 @@ from tkinter.filedialog import askopenfilenames, askopenfilename
 import soundfile as sf
 import psutil
 from moviepy.editor import VideoFileClip, AudioFileClip
-from threading import Thread
-from queue import Queue
+from PremierePro import Project
 
+import pymiere
 
 tk.Tk().withdraw() # part of the import if you are not using other tkinter functions
 
@@ -94,6 +95,8 @@ class VideoEditor:
                         self.save()
                     elif event.key == pygame.K_e and pygame.key.get_mods() & pygame.KMOD_CTRL:
                         self.export()
+                    elif event.key == pygame.K_p and pygame.key.get_mods() & pygame.KMOD_CTRL:
+                        self.export_to_premiere()
             if self.opened_window:
                 self.opened_window.frame(events, pos)
             else:
@@ -224,51 +227,18 @@ class VideoEditor:
         os.remove("temp_"+video_name)
 
 
-class VideoGenerator:
-    def __init__(self, name, size, fps, get_frame_func, length):
-        self.name = name
-        self.size = size
-        self.fps = fps
-        self.get_frame_func = get_frame_func
-        self.length = length
+    def export_to_premiere(self):
+        print("Exporting to Premiere Pro...")
+        project_path = self.project_name[:-4]+".xml"
 
-        self.black_image = np.zeros((self.size[0], self.size[1], 3), dtype = np.uint8)
+        # create new empty project
+        project = Project(project_path, self.project_name[:-4], self.project_data.fps, self.project_data.length)
 
-        self.frames_queue = Queue()
-        self.frames_processed = 0
+        # add the clips to the sequence at different locations
+        for videoObject in list(chain.from_iterable(self.project_data.rows)):
+            if isinstance(videoObject, Video):
+                project.add_video_clip(videoObject.video_path, "Clip", videoObject.start, videoObject.end, videoObject.video_start)
 
-    def process_frame(self, frame_index):
-        videoObject = self.get_frame_func(frame_index)
-        if videoObject and isinstance(videoObject, Video):
-            frame = videoObject.get_high_res_frame_at_pos(frame_index)
-        else:
-            frame = self.black_image
-        self.frames_queue.put((frame_index, frame))
+        project.add_audio_clip(self.project_data.main_song, "Main Song")
 
-    def write_video(self):
-        video = cv2.VideoWriter(self.name, 0, self.fps, self.size)
-        black_image = np.zeros((self.size[0], self.size[1], 3), dtype=np.uint8)
-
-        while self.frames_processed < self.length:
-            if not self.frames_queue.empty():
-                frame_index, frame = self.frames_queue.get()
-                video.write(frame)
-                self.frames_processed += 1
-
-        cv2.destroyAllWindows()
-        video.release()
-
-    def generate_video(self):
-        num_threads = 4  # Adjust the number of threads based on your system's capabilities
-        threads = []
-
-        for _ in range(num_threads):
-            t = Thread(target=self.write_video)
-            t.start()
-            threads.append(t)
-
-        for frame_index in tqdm(range(self.length)):
-            self.process_frame(frame_index)
-
-        for t in threads:
-            t.join()
+        project.save()

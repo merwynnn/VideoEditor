@@ -3,17 +3,17 @@ import sys
 import time
 import _pickle as cPickle
 from itertools import chain
-from multiprocessing import Pool
 
 import cv2
 import numpy as np
 import pygame
-from moviepy.video.io.ImageSequenceClip import ImageSequenceClip
 from tqdm import tqdm
+
 
 pygame.font.init()
 pygame.mixer.init()
 
+from TransitionsEffectsSelector import TransitionsEffectsSelector
 from Previewer import Previewer
 from FileBrowser import FileBrowser
 from ProjectData import ProjectData
@@ -28,7 +28,6 @@ import psutil
 from moviepy.editor import VideoFileClip, AudioFileClip
 from PremierePro import Project
 
-import pymiere
 
 tk.Tk().withdraw() # part of the import if you are not using other tkinter functions
 
@@ -60,6 +59,8 @@ class VideoEditor:
         self.timeline = Timeline(self.window, (5, self.previewer.size[1]), (self.size[0]-5, self.size[1]-self.previewer.size[1]), self)
 
         self.file_browser = FileBrowser(self.window, (0, 0), (self.size[0]*0.25, self.previewer.size[1]), self)
+
+        self.transitions_effects_selector = TransitionsEffectsSelector(self.window, (self.previewer.pos[0]+self.previewer.size[0], self.previewer.pos[1]), (self.size[0]*0.25, self.previewer.size[1]))
 
         self.opened_window = None   # Window opened in front of main window
 
@@ -103,6 +104,7 @@ class VideoEditor:
                 self.timeline.frame(events, pos)
                 self.previewer.frame(events, pos)
                 self.file_browser.frame(events, pos)
+                self.transitions_effects_selector.frame(events, pos)
 
                 self.reload_all = False
 

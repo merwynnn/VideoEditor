@@ -118,12 +118,13 @@ class Timeline:
                                     if self.hovered_cut_left.end <= right_timeline_object.start <= self.hovered_cut_left.end + 1:
                                         self.hovered_cut_right = right_timeline_object
 
-            if self.hovered_cut_right or self.hovered_cut_left:
-                cursor = pygame.cursors.Cursor(pygame.SYSTEM_CURSOR_HAND)
-                pygame.mouse.set_cursor(*cursor)
-            else:
-                cursor = pygame.cursors.Cursor(pygame.SYSTEM_CURSOR_ARROW)
-                pygame.mouse.set_cursor(*cursor)
+            if not self.videoEditor.transitions_effects_selector.transitions_selector.current_selected_transition:
+                if self.hovered_cut_right or self.hovered_cut_left:
+                    cursor = pygame.cursors.Cursor(pygame.SYSTEM_CURSOR_HAND)
+                    pygame.mouse.set_cursor(*cursor)
+                else:
+                    cursor = pygame.cursors.Cursor(pygame.SYSTEM_CURSOR_ARROW)
+                    pygame.mouse.set_cursor(*cursor)
 
         keys = pygame.key.get_pressed()
         for event in events:
@@ -189,6 +190,15 @@ class Timeline:
                             self.remove_object_from_timeline(t_object)
                             self.add_object_to_timeline(t_object)
 
+                if self.videoEditor.transitions_effects_selector.transitions_selector.current_selected_transition:
+                    if self.hovered_cut_right and self.hovered_cut_left:
+                        if isinstance(self.hovered_cut_right, Video) and isinstance(self.hovered_cut_left, Video):
+                            # Add transition
+                            print("transition")
+                            transition = self.videoEditor.transitions_effects_selector.transitions_selector.current_selected_transition.transition(self.win, self.hovered_cut_right, self.hovered_cut_left)
+                            self.hovered_cut_right.end_transition = transition
+                            self.hovered_cut_left.start_transition = transition
+
         if self._is_cursor_moving:
             self.cursor_pos = self.x_to_frame(mouse_pos[0])
             self.videoEditor.previewer.has_cursor_moved = True
@@ -238,6 +248,7 @@ class Timeline:
                 pygame.draw.line(self.win, time_color, (pos[0], pos[1] + t.get_rect().height + 5),
                                  (self.time_to_pos(i), self.pos[1] + self.size[1] - 15), 2)
 
+        transitions = []
         i = 0
         for timeline_object in self.timeline_objects:
             if self.handle.view_limits[0] <= timeline_object.start <= self.handle.view_limits[1] or \
@@ -247,6 +258,13 @@ class Timeline:
                 i += 1
                 timeline_object.frame(events, mouse_pos,
                                       selected=True if timeline_object in self.selected_timeline_objects else False)
+                if isinstance(timeline_object, Video):
+                    if timeline_object.end_transition:
+                        transitions.append(timeline_object.end_transition)
+
+        for transition in transitions:
+            transition.frame(events, mouse_pos)
+            print("frame")
 
         if self.cursor_pos < 0:
             self.cursor_pos = 0
@@ -486,6 +504,9 @@ class Video(TimelineObject):
         self.video_end = None
         self.calculate_video_start_end(video_start, video_end)
 
+        self.start_transition = None
+        self.end_transition = None
+
     def top_frame(self, events, mouse_pos, row_pos, row_size):
         if self.video_file and self.timeline.preview:
             video_size = self.video_file.mid_frame.get_size()
@@ -493,8 +514,11 @@ class Video(TimelineObject):
             nb = int(row_size[0] // w)
             if nb > 0:
                 for i in range(nb):
-                    self.timeline.win.blit(pygame.transform.scale(self.video_file.mid_frame, (w, row_size[1])),
-                                           (row_pos[0] + i * w, row_pos[1]))
+                    pos = (row_pos[0] + i * w, row_pos[1])
+                    size = (w, row_size[1])
+                    if 0 <= pos[0] <= self.timeline.win.get_width() or 0 <= pos[0]+size[0] <= self.timeline.win.get_width():
+                        self.timeline.win.blit(pygame.transform.scale(self.video_file.mid_frame, size),
+                                           pos)
                 if row_size[0] % w - row_size[0] != 0:
                     self.timeline.win.blit(
                         pygame.transform.scale(self.video_file.mid_frame, (row_size[0] % w, row_size[1])),
@@ -521,10 +545,10 @@ class Video(TimelineObject):
             ((rel_frame - self.video_start) * (self.end - self.start)) / (self.video_end - self.video_start))
         return absolute_pos + self.start
 
-    def get_frame_at_pos(self, pos):
+    def get_frame_at_pos(self, pos, pg_image=True):
         frame_with_fps = self.get_relative_frame_index(pos)
 
-        frame = self.video_file.get_frame(frame_with_fps)
+        frame = self.video_file.get_frame(frame_with_fps, pg_image=pg_image)
 
         return frame
 

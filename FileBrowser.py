@@ -67,6 +67,7 @@ class FileBrowser:
                             if viewer.hovered:
                                 self._start_pos = mouse_pos
                                 self._current_video_viewer = viewer
+                                break
 
             if event.type == pygame.MOUSEBUTTONUP:
                 if self._current_video_viewer:
@@ -124,6 +125,9 @@ class FileBrowser:
                 self.size[1]:
             return True
         return False
+
+    def is_dragging_video(self):
+        return True if self._current_video_viewer else False
 
 
 class VideoViewer:

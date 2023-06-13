@@ -142,7 +142,7 @@ class VideoFile:
 
         self.is_loading = False
 
-    def get_frame(self, frame_index):
+    def get_frame(self, frame_index, pg_image=True):
         if self.videoEditor.pre_load:
             c_key = 0
             check=False
@@ -159,7 +159,8 @@ class VideoFile:
             frame_exists, f = self.video_object.read()
             if frame_exists:
                 f = cv2.resize(f,self.preview_resolution,fx=0,fy=0, interpolation = cv2.INTER_CUBIC)
-                f = pygame.image.frombuffer(f.tostring(), f.shape[1::-1], "BGR").convert()
+                if pg_image:
+                    f = pygame.image.frombuffer(f.tostring(), f.shape[1::-1], "BGR").convert()
                 return f
         return None
 

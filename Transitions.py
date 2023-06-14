@@ -1,3 +1,4 @@
+import cv2
 import pygame
 
 
@@ -13,11 +14,9 @@ class Transition:
 
     def frame(self, events, mouse_pos):
         row_pos_y,row_size_y = self.video_start.timeline.get_row_pos_size(self.video_start.row)
-        pos = (self.video_start.timeline.frame_to_pos(self.video_start.start), row_pos_y)
-
-        position = (pos[0], pos[1]+row_size_y//2)
-        pos = (self.video_start.timeline.frame_to_pos(self.get_start_frame_index()), position[1]-row_size_y//4)
-        rect = pygame.Rect(pos, (self.video_start.timeline.frame_to_pos(self.get_end_frame_index())-pos[0], row_size_y//2))
+        pos = (self.video_start.timeline.frame_to_pos(self.get_start_frame_index()), row_pos_y+row_size_y//3)
+        size = (self.video_start.timeline.frame_to_pos(self.get_end_frame_index())-pos[0], row_size_y//3)
+        rect = pygame.Rect(pos, size)
         pygame.draw.rect(self.win, (20, 20, 20), rect)
 
     def mix(self, frame_start, frame_end, delta_time):
@@ -25,10 +24,11 @@ class Transition:
 
     def get_frame(self, frame_index):
         delta_time = frame_index - self.get_start_frame_index()
-        frame_start = self.video_start.get_frame_at_pos(frame_index, pg_image=False)
-        frame_end = self.video_end.get_frame_at_pos(frame_index, pg_image=False)
+        frame_start = self.video_start.get_frame_at_pos(frame_index, pg_image=False, ignore_transition=True)
+        frame_end = self.video_end.get_frame_at_pos(frame_index, pg_image=False, ignore_transition=True)
 
-        return self.mix(frame_start, frame_end, delta_time)
+        image =self.mix(frame_start, frame_end, delta_time)
+        return image
 
     def get_high_res_frame(self, frame_index):
         delta_time = frame_index - self.get_start_frame_index()
@@ -51,8 +51,7 @@ class FadeTransition(Transition):
     def mix(self, frame_start, frame_end, delta_time):
         f1_opacity = (self.duration-delta_time)/self.duration
         f2_opacity = 1-f1_opacity
-
-        image = frame_start*f1_opacity+frame_end*f2_opacity
+        image = cv2.addWeighted(frame_start, f1_opacity, frame_end, f2_opacity, 0)
 
         return image
 

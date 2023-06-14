@@ -152,7 +152,6 @@ class TransitionSelector:
         pygame.mouse.set_cursor(*cursor)
 
 
-
 class TransitionViewer(Viewer):
     def __init__(self, transitionsEffectsSelector, display, pos, delta_pos, size, transition):
         super().__init__(display, pos, delta_pos, size)

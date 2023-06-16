@@ -159,6 +159,7 @@ class Button:
         self.click_check = True
 
     def frame(self, events, pos):
+
         self._is_hovered = self.is_hovered(pos)
         if self.click_check:
             for event in events:
@@ -182,14 +183,14 @@ class Button:
 
     def is_hovered(self, mouse_pos):
         if self.center:
-            if self.pos[0] - self.size[0] / 2 <= mouse_pos[0] - self.parent_pos[0] <= self.pos[0] + self.size[0] / 2 and \
+            if self.pos[0] - self.size[0] / 2 <= mouse_pos[0] <= self.pos[0] + self.size[0] / 2 and \
                     self.pos[1] - self.size[
-                1] / 2 <= mouse_pos[1] - self.parent_pos[1] <= self.pos[1] + \
+                1] / 2 <= mouse_pos[1] <= self.pos[1] + \
                     self.size[1] / 2:
                 return True
         else:
-            if self.pos[0] <= mouse_pos[0] - self.parent_pos[0] <= self.pos[0] + self.size[0] and self.pos[1] <= \
-                    mouse_pos[1] - self.parent_pos[1] <= self.pos[1] + self.size[1]:
+            if self.pos[0] <= mouse_pos[0] <= self.pos[0] + self.size[0] and self.pos[1] <= \
+                    mouse_pos[1]<= self.pos[1] + self.size[1]:
                 return True
         return False
 

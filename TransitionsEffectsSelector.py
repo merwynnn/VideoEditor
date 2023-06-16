@@ -1,5 +1,6 @@
 import pygame
 
+from AIManager import AIManager
 from Components import Button, get_hovered_color, Viewer
 from Components import ScrollView
 from Transitions import Transition
@@ -37,6 +38,7 @@ class TransitionButton(Button):
         self.center = False
 
         self.transitionsEffectsSelector = transitionsEffectsSelector
+
 
         self.line_thickness = 2
         self.line_length = 20
@@ -122,6 +124,8 @@ class TransitionSelector:
         self.pos = pos
         self.size = size
 
+        self.AI_manager = AIManager()
+
         self.scroll_view = ScrollView(self.win, self.pos, self.size, on_selected=self.on_drag_start, on_drag=self.on_drag, on_drag_stop=self.on_drag_stop)
 
         self.transitions_viewer = []
@@ -135,8 +139,13 @@ class TransitionSelector:
 
         self.current_selected_transition = None
 
+        self.create_new_transition_btn = CreateNewTransitionButton(self, self.win, (self.pos[0]+self.size[0] / 2, self.pos[1]+self.size[1] - 50),
+                                            (100, 40))
+        self.create_new_transition_btn.parent_pos = self.pos
+
     def frame(self, events, pos):
         self.scroll_view.frame(events, pos)
+        self.create_new_transition_btn.frame(events, pos)
 
     def on_drag_start(self, transition_viewer):
         self.current_selected_transition = transition_viewer
@@ -150,6 +159,18 @@ class TransitionSelector:
         self.current_selected_transition = None
         cursor = pygame.cursors.Cursor(pygame.SYSTEM_CURSOR_ARROW)
         pygame.mouse.set_cursor(*cursor)
+
+    def create_new_transition(self):
+            transition_car = input("The transition should be ")
+            with open("new_transition_prompt", "r") as new_transition_prompt:
+                text = new_transition_prompt.read()
+            text = text.replace("[transition_description]", transition_car)
+
+            print(text)
+            self.AI_manager.chat(text, self.on_ai_responded)
+
+    def on_ai_responded(self, response):
+        print(response)
 
 
 class TransitionViewer(Viewer):
@@ -165,3 +186,38 @@ class TransitionViewer(Viewer):
 
     def on_delete(self):
         self.transitionsEffectsSelector.videoEditor.delete_transition(self.transition)
+
+
+class CreateNewTransitionButton(Button):
+    BACKGROUND_COLOR = (48, 48, 48)
+
+    def __init__(self, transitionsSelector, display, pos, size):
+        super().__init__(display, pos, size, self.create_new_transition)
+        self.transitionsSelector = transitionsSelector
+
+        self.center = True
+
+    def create_new_transition(self):
+        self.transitionsSelector.create_new_transition()
+
+    def blit(self):
+        rect = pygame.Rect((self.pos[0] - self.size[0] / 2, self.pos[1] - self.size[1] / 2), self.size)
+        pygame.draw.rect(self.display, self.BACKGROUND_COLOR, rect, 0, 1)
+        pygame.draw.rect(self.display, (255, 255, 255), rect, 1, 1)
+
+        name = small_font.render("Create New", True, (255, 255, 255))
+
+        self.display.blit(name, (
+            self.pos[0] - name.get_rect().width / 2,
+            self.pos[1] - name.get_rect().height / 2))
+
+    def blit_hovered(self):
+        rect = pygame.Rect((self.pos[0] - self.size[0] / 2, self.pos[1] - self.size[1] / 2), self.size)
+        pygame.draw.rect(self.display, get_hovered_color(self.BACKGROUND_COLOR), rect, 0, 1)
+        pygame.draw.rect(self.display, (255, 255, 255), rect, 1, 1)
+
+        name = small_font.render("Create New", True, (255, 255, 255))
+
+        self.display.blit(name, (
+            self.pos[0] - name.get_rect().width / 2,
+            self.pos[1] - name.get_rect().height / 2))

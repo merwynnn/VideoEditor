@@ -1,0 +1,31 @@
+I have a python script which displays a video. I would want to show a transition between two clips. I'm loading the video frame by frame using opencv and diplaying it frame by frame. I want to create a function called mix, that takes the frame of two clips at the same moment and the time spent in the transition(delta time). The duration of the transition can be obtained with self.duration.
+Here is an example of that function with the description "a simple fade transition between video 1 and video 2" :
+
+def mix(self, frame_video_1, frame_video_2, delta_time):
+    f1_opacity = (self.duration-delta_time)/self.duration
+    f2_opacity = 1-f1_opacity
+    image = cv2.addWeighted(frame_video_1, f1_opacity, frame_video_2, f2_opacity, 0)
+
+    return image
+
+Here is another example with the description "a dip to black transition (video 1 to black screen with fade to video 2 with fade)" :
+
+def mix(self, frame_video_1, frame_video_2, delta_time):
+    transition_duration = self.duration / 2  # Divide the transition time equally between the two fades
+    black_frame = np.zeros(frame_video_1.shape, dtype=np.uint8)  # Create a black frame
+
+    if delta_time <= transition_duration:
+        f1_opacity = (transition_duration - delta_time) / transition_duration
+        black_frame_opacity = 1 - f1_opacity
+        image = cv2.addWeighted(frame_video_1, f1_opacity, black_frame, black_frame_opacity, 0)
+
+    else:
+        black_frame_opacity = (transition_duration - (delta_time-transition_duration)) / transition_duration
+        f2_opacity = 1-black_frame_opacity
+        image = cv2.addWeighted(black_frame, black_frame_opacity, frame_video_2, f2_opacity, 0)
+    return image
+
+
+Now, please write the function for the description of a transition that should be "[transition_description]".
+
+

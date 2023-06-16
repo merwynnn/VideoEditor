@@ -1,4 +1,5 @@
 import cv2
+import numpy as np
 import pygame
 
 
@@ -48,10 +49,46 @@ class FadeTransition(Transition):
     def __init__(self, win, video_start, video_end, duration=30):
         super().__init__(win, video_start, video_end, duration, "Fade")
 
-    def mix(self, frame_start, frame_end, delta_time):
-        f1_opacity = (self.duration-delta_time)/self.duration
-        f2_opacity = 1-f1_opacity
-        image = cv2.addWeighted(frame_start, f1_opacity, frame_end, f2_opacity, 0)
+    def mix(self, frame_video_1, frame_video_2, delta_time):
+        f1_opacity = (self.duration - delta_time) / self.duration
+        f2_opacity = 1 - f1_opacity
+        image = cv2.addWeighted(frame_video_1, f1_opacity, frame_video_2, f2_opacity, 0)
 
         return image
+
+class DipToBlackTransition(Transition):
+    def __init__(self, win, video_start, video_end, duration=60):
+        super().__init__(win, video_start, video_end, duration, "DipToBlack")
+
+    def mix(self, frame_video_1, frame_video_2, delta_time):
+        transition_duration = self.duration / 2  # Divide the transition time equally between the two fades
+        black_frame = np.zeros(frame_video_1.shape, dtype=np.uint8)  # Create a black frame
+
+        if delta_time <= transition_duration:
+            f1_opacity = (transition_duration - delta_time) / transition_duration
+            black_frame_opacity = 1 - f1_opacity
+            image = cv2.addWeighted(frame_video_1, f1_opacity, black_frame, black_frame_opacity, 0)
+
+        else:
+            black_frame_opacity = (transition_duration - (delta_time-transition_duration)) / transition_duration
+            f2_opacity = 1-black_frame_opacity
+            image = cv2.addWeighted(black_frame, black_frame_opacity, frame_video_2, f2_opacity, 0)
+        return image
+
+class LeftToRightTransition(Transition):
+    def __init__(self, win, video_start, video_end, duration=60):
+        super().__init__(win, video_start, video_end, duration, "LeftToRightTransition")
+
+    def mix(self, frame_video_1, frame_video_2, delta_time):
+        f1_opacity = 1 - (self.duration - delta_time) / self.duration
+
+        f2_opacity = 1 - f1_opacity
+        image = cv2.addWeighted(frame_video_1, f1_opacity, frame_video_2, f2_opacity, 0)
+
+        return image
+
+
+
+
+
 

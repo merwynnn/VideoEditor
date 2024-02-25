@@ -9,7 +9,5 @@
 ## Installation
 
 - Download the repository
-- Run ```python
-  main.py
-```
+- Run main.py
 
